@@ -1,0 +1,1 @@
+const $ = (txt) => document.getElementById(txt);

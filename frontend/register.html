@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <form action="" id="form">
+        <input type="text" id="user">
+        <input type="text" id="email">
+        <input type="text" id="password">
+        <button type="submit"></button>
+    </form>
+
+    <script>
+        document.getElementById('form').addEventListener('submit', (e)=>{
+            e.preventDefault();
+            let user = document.getElementById('user').value
+            let email = document.getElementById('email').value
+            let pass = document.getElementById('password').value
+            fetch('/auth/regis' , {
+                method:'POST',
+                headers:{'content-type':'application/json'},
+                body:JSON.stringify({user:user , email:email , pass:pass})
+            })
+            .then(res => res.json())
+            .then(data =>{
+                if(!data.success){
+                    console.log(data.message);
+                    
+                }
+                alert('success')
+            })
+        })
+    </script>
+</body>
+</html>

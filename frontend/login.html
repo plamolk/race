@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <form action="" id="form">
+        <input type="text" id='email'>
+        <input type="text" id='password'>
+        <button type="submit">submit</button>
+    </form>
+</body>
+
+<!-- <script src="../app.js"></script> -->
+<script>
+    document.getElementById('form').addEventListener('submit', (e)=>{
+        e.preventDefault()
+        let email = document.getElementById('email').value;
+        let pass = document.getElementById('password').value;
+        fetch('/auth/login' ,{
+            method:'POST',
+            headers:{'content-type':'application/json'},
+            body:JSON.stringify({email:email , pass:pass})
+        })
+        .then(res => res.json())
+        .then(data =>{
+            if(!data.success){
+                console.log(data.message);
+            }
+            console.log(data);
+            localStorage.setItem("token" , data.token)
+            let token = localStorage.getItem('token')
+            // console.log("token :" token);
+            fetch('/profile' , {
+                headers: {'Authrization' : 'Bearer ' + token}
+            })
+            .then(res => res.json())
+            .then(user =>{
+                console.log(user);
+                
+            })
+        })
+    })
+</script>
+</html>
