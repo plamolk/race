@@ -3,27 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="../style/output.css">
+    <link rel="stylesheet" href="./style/output.css">
     <title>Document</title>
 </head>
 <body class="bg-red-100/50">
     <div class=" my-21 mx-18">
     <h1 class="text-4xl text-red-600 font-bold ">รายการผู้ขอรับการประเมิน</h1>
         <div class="p-9 border border-gray-100 rounded-lg bg-white mt-8 mx-18">
-            <div class="grid grid-cols-8">
-                <div class="border border-gray-200 rounded-lg col-span-2 p-3 px-6 shadow-sm">
-                    <h1 class="text-end text-gray-400 font-">สถานะการประเมิน</h1>
-                    <div class="justify-center flex">
-                        <img src="" class="p-8 h-8 rounded-full border border-gray-200" alt="">
-                    </div>
-                    <div class="mt-2 mt-5">
-                        <h1 class="text-xl font-bold text-center text-red-600">นาย พรำ่เำรำพ่ เรำ่พเรพำ่เำพ</h1>
-                        <h1 class="text-xl font-bold text-center text-red-600">นาย พรำ่เำรำพ่</h1>
-                    </div>
-                    <button class="text-center text-white bg-red-600 rounded-xl w-full mt-5 py-1 font-bold">เริ่มการประเมิน</button>
-                </div>
+            <div class="grid grid-cols-9" id="b_div">
+                
             </div>
         </div>
     </div>
 </body>
+
+<script src="app.js"></script>
+<script>
+    get_profile().then(client =>{
+        console.log(client.client_id);
+         fetch('/select/evolution/client/' + client.client_id )
+         .then(res => res.json())
+         .then(data =>{     
+            console.log(data);
+             let b_div = document.getElementById('b_div')  
+            data.forEach(item =>{
+                console.log(item);
+                let div = document.createElement('div');
+                div.className = "border border-gray-200 rounded-lg col-span-3 p-3 px-6 shadow-sm"
+                div.innerHTML = `
+                    <div>
+                        <h1 class="text-end text-gray-400 font-bold">สถานะการประเมิน : ${item.ev_status}</h1>
+                        <div class="justify-center flex my-8">
+                            <img src="" class="p-18 h-18 rounded-full border border-gray-200" alt="">
+                        </div>
+                        <div class="mt-2 mt-5">
+                            <h1 class="text-xl font-bold text-center text-red-600" id="name${item.ev_id}"></h1>
+                            <h1 class="text-xl font-bold text-center text-red-600" id="${item.ev_id}"></h1>
+                        </div>
+                        <button class="text-center text-white bg-red-600 rounded-xl w-full mt-5 py-1 font-bold" name="${client.client_id}" onclick="window.location.replace('assessment.html?assessId=${item.ev_id}')">เริ่มการประเมิน</button>
+                    </div>
+                    `
+                    
+                    b_div.appendChild(div)
+                    get_client(item.ev_client_id).then(c =>{      
+                    document.getElementById("name"+item.ev_id).innerHTML = c.client_fullname;
+                     })
+                })
+            
+         })
+    })
+
+</script>
 </html>

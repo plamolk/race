@@ -38,8 +38,21 @@ app.get('/profile', authen ,(req,res)=>{
 } )
 
 app.get('/select/assessment/:id', (req,res) =>{
-    const error = (e)
+    const error = (e) => res.status(500).json({ message:'error' , success:false})
+
+    config.query('SELECT * FROM evolution WHERE ev_id = ?' , req.params.id , (e , evo) =>{
+        if(e) return error(e);
+        config.query('SELECT * FROM topic WHERE topic_ev_id' , evo[0].ev_id , (e, top) =>{
+            if(e) return error(e);
+            config.query('SELECT * FROM subtopic WHERE subtopic_topic_id IN (?)' , [top.map(t => t.topic_id)] , (e , sub) =>{
+                if(e) return error(e);
+                res.json({ev:evo , top:top , sub:sub})
+            })
+        })
+    })
 })
+
+
 
 
 
@@ -58,3 +71,20 @@ app.get('/select/assessment/:id', (req, res) => {
         });
     });
 });
+
+
+app.get('/select/evolution/:id', (req,res) =>{
+    const err = (e) => res.status(500).json({message: 'error' , success:false})
+
+    config.query("SELECT * FROM evolution WHERE ev_id = ?" , req.params.id , (e , assess) =>{
+        if(e) return err(e);
+        config.query('SELECT * FROM topic WHERE topic_ev_id = ?', assess[0].ev_id , (e , top) =>{
+            if(e) return err(e);
+            config.query('SELECT * FROM subtopic WHERE subtopic_topic_id IN (?)', [top.map(t => t.topic_id)], (e , sub) =>{
+                if(e) return err(e);
+                 res.json({ev:assess , topic:top , sub:sub , success:true});
+            })
+        })
+    } )
+})
+

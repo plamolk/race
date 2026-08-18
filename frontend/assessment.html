@@ -71,4 +71,46 @@
         </div>
     </div>
 </body>
+
+<script src="app.js"></script>
+<script>
+    let assessId = new URLSearchParams(window.location.search).get('assessId');
+    
+    get_profile().then(client =>{
+        fetch('/select/assessment/'+ assessId)
+        .then(res => res.json())
+        .then(({ ev, top, sub }) =>{     
+            console.log(ev);
+            
+        const tbody = document.querySelector('#table tbody');
+        console.log(top);
+        
+        top.forEach( t=>{
+                const head= (clos) => `<tr class="bg-red-200 text-red-700 font-bold"><td colspan="${clos}">${t.topic_name}</td></tr>`;
+                tbody.innerHTML += head(4);
+                sub.filter(s => s.subtopic_topic_id == t.topic_id).forEach(s =>{
+                console.log(s);
+                
+                const tdCls = `class="border border-gray-200 p-2 text-gray-600 text-center"`;
+
+                if (s.subtopic_type == "score") {
+                    tbody.innerHTML += `<tr>
+                        <td ${tdCls}>${s.subtopic_name}</td>
+                        <td ${tdCls}>${s.subtopic_detail}</td>
+                        <td ${tdCls}><input type="number" id="${s.subtopic_id}" name="${ev.ev_as_id}" class="border w-20 text-center" min="1" max="4" onchange="score(this)" required></td>
+                    </tr>`;
+                } else if (s.subtopic_type == "choice") {
+                    tbody1.innerHTML += `<tr>
+                        <td ${tdCls}>${s.subtopic_name}</td>
+                        <td ${tdCls}>${s.subtopic_detail}</td>
+                        <td ${tdCls}><input type="checkbox" id="${s.subtopic_id}" ${val == 1 ? "checked" : ""} class="w-5 h-5" onclick="choice_1(this)"></td>
+                        <td ${tdCls}><input type="checkbox" id="${s.subtopic_id}" ${val === 0 ? "checked" : ""} class="w-5 h-5" onclick="choice_0(this)"></td>
+                    </tr>`;
+                }
+            })
+        })
+
+        })
+    })
+</script>
 </html>
