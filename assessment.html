@@ -1,0 +1,106 @@
+const loadHtml = async (id, url) => $(id).innerHTML = await (await fetch(url)).text();
+Promise.all([loadHtml('#nav', 'nav.html'), loadHtml('#sidebar', 'sidebar.html')]);
+
+getinforToken().then(user => {
+    const assessId = new URLSearchParams(window.location.search).get('assessId');
+    
+    // ยุบ Event Listener ให้สั้นลง
+    $('#form').onsubmit = (e) => {
+        e.preventDefault();
+        window.location.replace(`check.html?assessId=${assessId}`);
+    };
+
+    fetchg(`${http}/select/assessment/${assessId}`).then(({ data: { assessment, topic, subtopic } }) => {
+        const assess = assessment[0];
+        $('#user').innerHTML += ` ${assess.assessment_client_fullname}`;
+
+        const tbody = $('#table tbody');
+        const tbody1 = $('#table1 tbody');
+
+        topic.forEach(t => {
+            const head = (cols) => `<tr class="bg-red-200 text-red-700 font-bold"><td colspan="${cols}">${t.topic_name}</td></tr>`;
+            tbody.innerHTML += head(4);
+            tbody1.innerHTML += head(5);
+
+            subtopic.filter(s => s.subtopic_topic_id == t.topic_id).forEach(s => {
+                const val = (user.client_id == assess.assessment_chirman_id) ? s.subtopic_chirman_score : s.subtopic_assessor_score;
+                
+                // ยุบ Code ส่วนที่ใช้ซ้ำกันมากๆ ออกมาเป็นตัวแปร (ช่วยลดเวลาพิมพ์และโค้ดดูสะอาดขึ้น)
+                const tdCls = `class="border border-gray-200 p-2 text-gray-600 text-center"`;
+                const dlBtn = `<a href="../public/image/upload/${s.subtopic_image}" download class="border p-1 rounded-lg">โหลดหลักฐาน</a>`;
+
+                if (s.subtopic_type == "score") {
+                    tbody.innerHTML += `<tr>
+                        <td ${tdCls}>${s.subtopic_name}</td>
+                        <td ${tdCls}>${s.subtopic_detail}</td>
+                        <td ${tdCls}><input type="number" id="${s.subtopic_id}" value="${val || ''}" class="border w-20 text-center" min="1" max="4" onchange="score(this)" required></td>
+                        <td ${tdCls}>${dlBtn}</td>
+                    </tr>`;
+                } else if (s.subtopic_type == "choice") {
+                    tbody1.innerHTML += `<tr>
+                        <td ${tdCls}>${s.subtopic_name}</td>
+                        <td ${tdCls}>${s.subtopic_detail}</td>
+                        <td ${tdCls}><input type="checkbox" id="${s.subtopic_id}" ${val == 1 ? "checked" : ""} class="w-5 h-5" onclick="choice_1(this)"></td>
+                        <td ${tdCls}><input type="checkbox" id="${s.subtopic_id}" ${val === 0 ? "checked" : ""} class="w-5 h-5" onclick="choice_0(this)"></td>
+                        <td ${tdCls}>${dlBtn}</td>
+                    </tr>`;
+                }
+            });
+        });
+    });
+});
+
+
+
+
+
+// 1. ดึงค่าจาก URL ให้สั้นลง
+const assessId = new URL(location).searchParams.get('assessId');
+
+// 2. โหลด HTML พื้นฐาน (ไม่ต้องใช้ Promise.all ให้เสียเวลาพิมพ์ ถ้ายิงแยกได้เลย)
+const loadHtml = (id, url) => fetch(url).then(r => r.text()).then(h => $(id).innerHTML = h);
+loadHtml('#nav', 'nav.html');
+loadHtml('#sidebar', 'sidebar.html');
+
+getinforToken().then(user => {
+    $('#form').onsubmit = e => {
+        e.preventDefault();
+        location.replace(`check.html?assessId=${assessId}`);
+    };
+
+    fetchg(`${http}/select/assessment/${assessId}`).then(({ data: { assessment, topic, subtopic } }) => {
+        const assess = assessment[0];
+        $('#user').innerHTML += ` ${assess.assessment_client_fullname}`;
+
+        // 3. ใช้ String ต่อกันข้างนอกลูป (เร็วกว่าและพิมพ์สั้นกว่าการชี้ #table tbody บ่อยๆ)
+        let h0 = '', h1 = ''; 
+        
+        // 4. สร้างฟังก์ชันหุ้ม <td> เพื่อไม่ต้องพิมพ์ <td> และ class ซ้ำๆ
+        const td = (str) => `<td class="border p-2 text-center text-gray-600">${str}</td>`;
+
+        topic.forEach(t => {
+            const head = (c) => `<tr class="bg-red-200 font-bold"><td colspan="${c}">${t.topic_name}</td></tr>`;
+            h0 += head(4);
+            h1 += head(5);
+
+            subtopic.filter(s => s.subtopic_topic_id == t.topic_id).forEach(s => {
+                // 5. Destructuring ยุบชื่อตัวแปรยาวๆ ให้เหลือคำสั้นๆ
+                const { subtopic_id: id, subtopic_name: name, subtopic_detail: det, subtopic_image: img, subtopic_type: type } = s;
+                const val = (user.client_id == assess.assessment_chirman_id) ? s.subtopic_chirman_score : s.subtopic_assessor_score;
+
+                const base = td(name) + td(det); // 2 คอลัมน์แรกเหมือนกัน จับมัดรวมซะเลย
+                const dlBtn = td(`<a href="../public/image/upload/${img}" download class="border p-1 rounded">โหลด</a>`);
+
+                if (type == "score") {
+                    h0 += `<tr>${base}${td(`<input type="number" id="${id}" value="${val||''}" class="w-20 border text-center" min="1" max="4" onchange="score(this)" required>`)}${dlBtn}</tr>`;
+                } else {
+                    h1 += `<tr>${base}${td(`<input type="checkbox" id="${id}" ${val==1?'checked':''} class="w-5 h-5" onclick="choice_1(this)">`)}${td(`<input type="checkbox" id="${id}" ${val===0?'checked':''} class="w-5 h-5" onclick="choice_0(this)">`)}${dlBtn}</tr>`;
+                }
+            });
+        });
+
+        // 6. เอา String ยัดลง DOM ทีเดียวตอนจบ
+        $('#table tbody').innerHTML = h0;
+        $('#table1 tbody').innerHTML = h1;
+    });
+});

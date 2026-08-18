@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../public/style/output.css">
+    <link rel="stylesheet" href="../public/style/style.css">
+    <title>ตารางการประเมิน</title>
+    <!-- <meta http-equiv="refresh" content="1"> -->
+</head>
+
+<body class="bg-red-50">
+    <div id="nav"></div>
+    <div id="sidebar"></div>
+    <div class="inset-0 fixed bg-black opacity-50 hidden" id="overlay"></div>
+    <form action="" id="form">
+        <div class="lg:px-25 md:px-15 sm:px-10">
+            <div class="items-center flex justify-center ">
+                <div class="bg-white max-w-5xl w-full bg-white mt-12 p-5 rounded-xl shadow-lg">
+                    <h1 class="text-red-600 font-bold text-3xl text-center">แบบฟอร์มการประเมิน</h1>
+                    <div class="grid grid-cols-4 gap-4 mt-12">
+                        <div class="lg:col-span-2 md:col-span-2 col-span-4">
+                            <h1 class="text-gray-600" id="user">ชื่อ-นามสกุล :</h1>
+                            <h1 class="text-gray-600" id="posi">ตำแหน่ง :</h1>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto w-full mt-6">
+                        <h1 class="text-gray-700">ตารางการประเมินแบบคะแนน</h1>
+                        <table class="min-w-max w-full table-auto" id="table">
+                            <thead>
+                                <tr>
+                                    <th class="bg-red-600 text-white p-2 border border-red-200">หัวข้อ</th>
+                                    <th class="bg-red-600 text-white p-2 border border-red-200">รายระเอียด</th>
+                                    <th class="bg-red-600 text-white p-2 border border-red-200">คะแนน (1-4)</th>
+                                    <th class="bg-red-600 text-white p-2 w-30 border border-red-200">หลักฐาน</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="overflow-x-auto w-full mt-12">
+                        <h1 class="text-gray-700">ตารางการประเมินแบบตัวเลือก</h1>
+                        <table class="min-w-max w-full table-auto" id="table1">
+                            <thead>
+                                <tr>
+                                    <th class="bg-red-600 text-white border border-red-200" rowspan="2">หัวข้อ</th>
+                                    <th class="bg-red-600 text-white border border-red-200" rowspan="2">รายระเอียด</th>
+                                    <th class="bg-red-600 text-white border border-red-200" colspan="2">ตัวเลือก</th>
+                                    <th class="bg-red-600 text-white w-30 border border-red-200" rowspan="2">หลักฐาน
+                                    </th>
+                                </tr>
+                                <tr>
+                                    <th class="bg-red-600 text-white w-30 border border-red-200">มี</th>
+                                    <th class="bg-red-600 text-white w-30 border border-red-200">ไม่มี</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="justify-end flex mt-14 gap-2">
+                        <button type="reset"
+                            class="p-1 rounded-lg text-lg text-gray-700 bg-gray-200 px-5">ยกเลิก</button>
+                        <button type="submit"
+                            class="text-white bg-red-600 rounded-lg p-1 px-5 font-bold">บันทึกข้อมูล</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</body>
+
+<script src="../js.js"></script>
+<script>
+    const loadHtml = async (id, url) => $(id).innerHTML = await (await fetch(url)).text();
+    Promise.all([loadHtml('#nav', 'nav.html'), loadHtml('#sidebar', 'sidebar.html')]);
+
+    getinforToken().then(user => {
+        const assessId = new URLSearchParams(window.location.search).get('assessId');
+
+        $('#form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            window.location.replace(`check.html?assessId=${assessId}`); 
+        });
+
+        fetchg(`${http}/select/assessment/${assessId}`).then(data => {
+            const assess = data.data.assessment[0];
+            $('#user').innerHTML += ` ${assess.assessment_client_fullname}`;
+
+            const tbody = $('#table tbody');
+            const tbody1 = $('#table1 tbody');
+
+            data.data.topic.forEach(t => {
+                const headerRow = (cols) => `<tr class="bg-red-200 text-red-700 font-bold p-1 border border-gray-200"><td colspan="${cols}">${t.topic_name}</td></tr>`;
+                tbody.innerHTML += headerRow(4);
+                tbody1.innerHTML += headerRow(5);
+
+                data.data.subtopic.filter(s => s.subtopic_topic_id == t.topic_id).forEach(s => {
+                    const isChir = user.client_id == assess.assessment_chirman_id;
+                    const val = isChir ? s.subtopic_chirman_score : s.subtopic_assessor_score;
+
+                    if (s.subtopic_type == "score") {
+                        tbody.innerHTML += `<tr>
+                            <td class="border border-gray-200 p-2 text-gray-600">${s.subtopic_name}</td>
+                            <td class="border border-gray-200 p-2 text-gray-600 text-center wrap-anywhere">${s.subtopic_detail}</td>
+                            <td class="border border-gray-200 p-2 text-gray-600">
+                                <div class="items-center flex justify-center">
+                                    <input type="number" id="${s.subtopic_id}" value="${val || ''}" class="border border-gray-200 rounded-lg w-20 text-center font-bold" min="1" max="4" onchange="score(this)" required>
+                                </div>
+                            </td>
+                            <td class="border border-gray-200 p-2 text-gray-600">
+                                <div class="items-center flex justify-center">
+                                    <a href="../public/image/upload/${s.subtopic_image}" download="${s.subtopic_image}" class="w-20 text-center border border-gray-200 p-1 rounded-lg">ดาวโหลดหลักฐาน</a>
+                                </div>
+                            </td>
+                        </tr>`;
+                    } else if (s.subtopic_type == "choice") {
+                        tbody1.innerHTML += `<tr>
+                            <td class="border border-gray-200 p-2 text-gray-600">${s.subtopic_name}</td>
+                            <td class="border border-gray-200 p-2 text-gray-600 text-center wrap-anywhere">${s.subtopic_detail}</td>
+                            <td class="border border-gray-200 text-gray-600">
+                                <div class="items-center flex justify-center">
+                                    <input type="checkbox" name="choice${s.subtopic_id}" id="${s.subtopic_id}" ${val == 1 ? "checked" : ""} class="border border-gray-200 rounded-lg w-5 h-5 text-center font-bold" onclick="choice_1(this)">
+                                </div>
+                            </td>
+                            <td class="border border-gray-200 text-gray-600">
+                                <div class="items-center flex justify-center">
+                                    <input type="checkbox" name="choice${s.subtopic_id}" id="${s.subtopic_id}" ${val == 0 && val != null ? "checked" : ""} class="border border-gray-200 rounded-lg w-5 h-5 text-center font-bold" onclick="choice_0(this)"> 
+                                </div>
+                            </td>
+                            <td class="border border-gray-200 p-2 text-gray-600">
+                                <div class="items-center flex justify-center">
+                                    <a href="../public/image/upload/${s.subtopic_image}" download="${s.subtopic_image}" class="w-20 text-center border border-gray-200 p-1 rounded-lg">ดาวโหลดหลักฐาน</a>
+                                </div>
+                            </td>
+                        </tr>`;
+                    }
+                });
+            });
+        });
+    });
+</script>
+
+
+
+
+</html>
